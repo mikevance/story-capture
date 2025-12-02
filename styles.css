@@ -468,3 +468,330 @@ body {
     display: block;
 }
 
+/* Navigation */
+.nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 2rem;
+    background: rgba(255, 249, 240, 0.8);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.nav-brand {
+    font-family: var(--font-display);
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--charcoal);
+    text-decoration: none;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--charcoal);
+    text-decoration: none;
+    background: var(--white);
+    border-radius: var(--radius-full);
+    box-shadow: var(--shadow-soft);
+    transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+    box-shadow: var(--shadow-medium);
+    transform: translateY(-1px);
+}
+
+/* Gallery Page */
+.gallery-container {
+    position: relative;
+    z-index: 1;
+    min-height: 100vh;
+    padding: 6rem 2rem 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.gallery-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.gallery-title {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.gallery-subtitle {
+    font-size: 1.125rem;
+    color: var(--charcoal-light);
+}
+
+.gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+
+/* Video Card */
+.video-card {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-soft);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.video-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-strong);
+}
+
+.video-thumbnail {
+    position: relative;
+    aspect-ratio: 16/9;
+    background: var(--charcoal);
+    overflow: hidden;
+}
+
+.video-thumbnail video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.play-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.3);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.video-card:hover .play-overlay {
+    opacity: 1;
+}
+
+.play-overlay svg {
+    width: 48px;
+    height: 48px;
+    color: var(--white);
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.3));
+}
+
+.video-info {
+    padding: 1rem 1.25rem;
+}
+
+.video-date {
+    font-size: 0.875rem;
+    color: var(--charcoal-light);
+}
+
+/* Loading State */
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    color: var(--charcoal-light);
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(78, 205, 196, 0.2);
+    border-top-color: var(--teal);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 1rem;
+}
+
+/* Empty State */
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    text-align: center;
+}
+
+.empty-icon {
+    width: 80px;
+    height: 80px;
+    background: rgba(78, 205, 196, 0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+}
+
+.empty-icon svg {
+    width: 40px;
+    height: 40px;
+    color: var(--teal);
+}
+
+.empty-state h2 {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+    color: var(--charcoal-light);
+    margin-bottom: 1.5rem;
+}
+
+/* Error State */
+.error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4rem 2rem;
+    text-align: center;
+    gap: 1rem;
+    color: var(--charcoal-light);
+}
+
+/* Video Modal */
+.modal {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+.modal.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+}
+
+.modal-content {
+    position: relative;
+    width: 90%;
+    max-width: 900px;
+    max-height: 90vh;
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+}
+
+.modal.active .modal-content {
+    transform: scale(1);
+}
+
+.modal-content video {
+    width: 100%;
+    height: auto;
+    max-height: 80vh;
+    background: var(--charcoal);
+    display: block;
+}
+
+.modal-close {
+    position: absolute;
+    top: -3rem;
+    right: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--white);
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.modal-close:hover {
+    opacity: 1;
+}
+
+.modal-close svg {
+    width: 24px;
+    height: 24px;
+}
+
+/* Success Actions */
+.success-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+    .nav {
+        padding: 0.75rem 1rem;
+    }
+    
+    .nav-brand {
+        font-size: 1rem;
+    }
+    
+    .nav-link {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.8rem;
+    }
+    
+    .gallery-container {
+        padding: 5rem 1rem 1rem;
+    }
+    
+    .gallery-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .modal-content {
+        width: 95%;
+    }
+    
+    .modal-close {
+        top: -2.5rem;
+    }
+    
+    .success-actions {
+        flex-direction: column;
+    }
+    
+    .success-actions .btn {
+        width: 100%;
+    }
+}
+

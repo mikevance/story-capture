@@ -215,59 +215,89 @@ function stopRecording() {
     }
 }
 
-// Download/Submit
-async function downloadVideo() {
+// Generate unique ID
+function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
+// Upload to Supabase
+async function uploadToSupabase(videoBlob) {
+    const videoId = generateId();
+    const filename = `${videoId}.mp4`;
+    
+    // Upload video to Supabase Storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('videos')
+        .upload(filename, videoBlob, {
+            contentType: 'video/mp4',
+            cacheControl: '3600'
+        });
+    
+    if (uploadError) {
+        throw new Error(`Upload failed: ${uploadError.message}`);
+    }
+    
+    // Get public URL
+    const { data: urlData } = supabase.storage
+        .from('videos')
+        .getPublicUrl(filename);
+    
+    // Save metadata to database
+    const { data: dbData, error: dbError } = await supabase
+        .from('stories')
+        .insert({
+            id: videoId,
+            video_url: urlData.publicUrl,
+            created_at: new Date().toISOString()
+        })
+        .select()
+        .single();
+    
+    if (dbError) {
+        throw new Error(`Database error: ${dbError.message}`);
+    }
+    
+    return dbData;
+}
+
+// Submit Video
+async function submitVideo() {
     if (!recordedBlob) return;
     
-    const timestamp = new Date().toISOString().slice(0, 19).replace(/[:-]/g, '');
-    let downloadBlob = recordedBlob;
-    let extension = 'mp4';
+    let uploadBlob = recordedBlob;
     
-    // Check if we need to convert (if it's not already MP4)
-    if (!recordedBlob.type.includes('mp4')) {
-        // Update button to show loading state
-        submitBtn.disabled = true;
-        submitText.textContent = 'Converting...';
-        submitBtn.style.opacity = '0.7';
-        
-        try {
-            // Load FFmpeg if not already loaded
+    // Update button to show loading state
+    submitBtn.disabled = true;
+    submitText.textContent = 'Processing...';
+    submitBtn.style.opacity = '0.7';
+    
+    try {
+        // Convert to MP4 if needed
+        if (!recordedBlob.type.includes('mp4')) {
+            submitText.textContent = 'Converting video...';
             const loaded = await loadFFmpeg();
             
             if (loaded) {
-                submitText.textContent = 'Processing video...';
-                downloadBlob = await convertToMP4(recordedBlob);
-            } else {
-                // Fallback to WebM if FFmpeg fails
-                console.warn('FFmpeg not available, downloading as WebM');
-                downloadBlob = recordedBlob;
-                extension = 'webm';
+                uploadBlob = await convertToMP4(recordedBlob);
             }
-        } catch (err) {
-            console.error('Conversion error:', err);
-            // Fallback to WebM
-            downloadBlob = recordedBlob;
-            extension = 'webm';
         }
+        
+        // Upload to Supabase
+        submitText.textContent = 'Uploading...';
+        await uploadToSupabase(uploadBlob);
+        
+        // Success!
+        showScreen('success');
+        
+    } catch (err) {
+        console.error('Submit error:', err);
+        alert('Failed to upload video. Please try again.');
         
         // Reset button
         submitBtn.disabled = false;
-        submitText.textContent = 'Save as MP4';
+        submitText.textContent = 'Submit Story';
         submitBtn.style.opacity = '1';
     }
-    
-    const filename = `my-story-${timestamp}.${extension}`;
-    
-    const url = URL.createObjectURL(downloadBlob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    showScreen('success');
 }
 
 // Reset Everything
@@ -282,6 +312,13 @@ function resetApp() {
     if (playback.src) {
         URL.revokeObjectURL(playback.src);
         playback.src = '';
+    }
+    
+    // Reset button state
+    if (submitBtn) {
+        submitBtn.disabled = false;
+        submitText.textContent = 'Submit Story';
+        submitBtn.style.opacity = '1';
     }
 }
 
@@ -313,7 +350,7 @@ retakeBtn.addEventListener('click', async () => {
 });
 
 submitBtn.addEventListener('click', () => {
-    downloadVideo();
+    submitVideo();
 });
 
 newRecordingBtn.addEventListener('click', () => {

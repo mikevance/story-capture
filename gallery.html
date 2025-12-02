@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Story Gallery - Share Your Story</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="background-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <a href="index.html" class="nav-brand">Story Capture</a>
+        <a href="index.html" class="nav-link">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/>
+                <circle cx="12" cy="12" r="3"/>
+            </svg>
+            Record Story
+        </a>
+    </nav>
+
+    <main class="gallery-container">
+        <header class="gallery-header">
+            <span class="eyebrow">Testimonies</span>
+            <h1 class="gallery-title">Stories of Faith</h1>
+            <p class="gallery-subtitle">Watch how Jesus has transformed lives</p>
+        </header>
+
+        <div id="gallery-grid" class="gallery-grid">
+            <!-- Videos will be loaded here -->
+        </div>
+
+        <div id="loading-state" class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>Loading stories...</p>
+        </div>
+
+        <div id="empty-state" class="empty-state" style="display: none;">
+            <div class="empty-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+            </div>
+            <h2>No stories yet</h2>
+            <p>Be the first to share your testimony!</p>
+            <a href="index.html" class="btn btn-primary">
+                <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <circle cx="12" cy="12" r="3"/>
+                </svg>
+                Record Your Story
+            </a>
+        </div>
+
+        <div id="error-state" class="error-state" style="display: none;">
+            <p>Unable to load stories. Please check your connection and try again.</p>
+            <button onclick="loadStories()" class="btn btn-secondary">Try Again</button>
+        </div>
+    </main>
+
+    <!-- Video Modal -->
+    <div id="video-modal" class="modal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <button id="close-modal" class="modal-close">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
+            </button>
+            <video id="modal-video" controls playsinline></video>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script>
+        const galleryGrid = document.getElementById('gallery-grid');
+        const loadingState = document.getElementById('loading-state');
+        const emptyState = document.getElementById('empty-state');
+        const errorState = document.getElementById('error-state');
+        const modal = document.getElementById('video-modal');
+        const modalVideo = document.getElementById('modal-video');
+        const closeModal = document.getElementById('close-modal');
+
+        // Format relative time
+        function formatTimeAgo(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const seconds = Math.floor((now - date) / 1000);
+            
+            const intervals = {
+                year: 31536000,
+                month: 2592000,
+                week: 604800,
+                day: 86400,
+                hour: 3600,
+                minute: 60
+            };
+            
+            for (const [unit, secondsInUnit] of Object.entries(intervals)) {
+                const interval = Math.floor(seconds / secondsInUnit);
+                if (interval >= 1) {
+                    return interval === 1 ? `1 ${unit} ago` : `${interval} ${unit}s ago`;
+                }
+            }
+            
+            return 'Just now';
+        }
+
+        // Create video card
+        function createVideoCard(story) {
+            const card = document.createElement('div');
+            card.className = 'video-card';
+            card.innerHTML = `
+                <div class="video-thumbnail">
+                    <video src="${story.video_url}" preload="metadata"></video>
+                    <div class="play-overlay">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <polygon points="5 3 19 12 5 21 5 3"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="video-info">
+                    <span class="video-date">${formatTimeAgo(story.created_at)}</span>
+                </div>
+            `;
+            
+            card.addEventListener('click', () => openModal(story.video_url));
+            return card;
+        }
+
+        // Open modal
+        function openModal(videoUrl) {
+            modalVideo.src = videoUrl;
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            modalVideo.play();
+        }
+
+        // Close modal
+        function closeModalHandler() {
+            modal.classList.remove('active');
+            document.body.style.overflow = '';
+            modalVideo.pause();
+            modalVideo.src = '';
+        }
+
+        closeModal.addEventListener('click', closeModalHandler);
+        modal.querySelector('.modal-backdrop').addEventListener('click', closeModalHandler);
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && modal.classList.contains('active')) {
+                closeModalHandler();
+            }
+        });
+
+        // Load stories from Supabase
+        async function loadStories() {
+            loadingState.style.display = 'flex';
+            emptyState.style.display = 'none';
+            errorState.style.display = 'none';
+            galleryGrid.innerHTML = '';
+
+            try {
+                const { data: stories, error } = await supabase
+                    .from('stories')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                loadingState.style.display = 'none';
+
+                if (error) {
+                    throw error;
+                }
+
+                if (!stories || stories.length === 0) {
+                    emptyState.style.display = 'flex';
+                    return;
+                }
+
+                stories.forEach(story => {
+                    galleryGrid.appendChild(createVideoCard(story));
+                });
+
+            } catch (err) {
+                console.error('Error loading stories:', err);
+                loadingState.style.display = 'none';
+                errorState.style.display = 'flex';
+            }
+        }
+
+        // Load stories on page load
+        loadStories();
+    </script>
+</body>
+</html>
+
