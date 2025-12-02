@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Story Capture</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .admin-badge {
+            background: var(--coral);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: var(--radius-full);
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .admin-card {
+            position: relative;
+        }
+        
+        .delete-btn {
+            position: absolute;
+            top: 0.75rem;
+            right: 0.75rem;
+            width: 36px;
+            height: 36px;
+            background: var(--coral);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: all 0.2s ease;
+            z-index: 10;
+        }
+        
+        .admin-card:hover .delete-btn {
+            opacity: 1;
+        }
+        
+        .delete-btn:hover {
+            background: var(--coral-dark);
+            transform: scale(1.1);
+        }
+        
+        .delete-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+        
+        .delete-btn:disabled {
+            opacity: 0.5;
+            cursor: wait;
+        }
+        
+        .video-id {
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: var(--charcoal-light);
+            margin-top: 0.25rem;
+        }
+        
+        .confirm-dialog {
+            position: fixed;
+            inset: 0;
+            z-index: 300;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s ease;
+        }
+        
+        .confirm-dialog.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .confirm-box {
+            background: white;
+            padding: 2rem;
+            border-radius: var(--radius-lg);
+            max-width: 400px;
+            text-align: center;
+            box-shadow: var(--shadow-strong);
+        }
+        
+        .confirm-box h3 {
+            margin-bottom: 0.5rem;
+        }
+        
+        .confirm-box p {
+            color: var(--charcoal-light);
+            margin-bottom: 1.5rem;
+        }
+        
+        .confirm-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+        
+        .btn-danger {
+            background: var(--coral);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: var(--coral-dark);
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--charcoal);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: var(--radius-full);
+            box-shadow: var(--shadow-strong);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 400;
+        }
+        
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        
+        .toast.error {
+            background: var(--coral);
+        }
+        
+        .toast.success {
+            background: var(--teal-dark);
+        }
+    </style>
+</head>
+<body>
+    <div class="background-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+    </div>
+
+    <nav class="nav">
+        <div style="display: flex; align-items: center; gap: 1rem;">
+            <a href="index.html" class="nav-brand">Story Capture</a>
+            <span class="admin-badge">Admin</span>
+        </div>
+        <a href="gallery.html" class="nav-link">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"/>
+                <rect x="14" y="3" width="7" height="7"/>
+                <rect x="14" y="14" width="7" height="7"/>
+                <rect x="3" y="14" width="7" height="7"/>
+            </svg>
+            Public Gallery
+        </a>
+    </nav>
+
+    <main class="gallery-container">
+        <header class="gallery-header">
+            <span class="eyebrow">Admin Panel</span>
+            <h1 class="gallery-title">Manage Stories</h1>
+            <p class="gallery-subtitle">Click the trash icon to delete a video</p>
+        </header>
+
+        <div id="gallery-grid" class="gallery-grid"></div>
+
+        <div id="loading-state" class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>Loading stories...</p>
+        </div>
+
+        <div id="empty-state" class="empty-state" style="display: none;">
+            <div class="empty-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+            </div>
+            <h2>No stories yet</h2>
+            <p>Videos will appear here once submitted.</p>
+        </div>
+
+        <div id="error-state" class="error-state" style="display: none;">
+            <p>Unable to load stories. Please check your connection.</p>
+            <button onclick="loadStories()" class="btn btn-secondary">Try Again</button>
+        </div>
+    </main>
+
+    <!-- Confirm Dialog -->
+    <div id="confirm-dialog" class="confirm-dialog">
+        <div class="confirm-box">
+            <h3>Delete this story?</h3>
+            <p>This action cannot be undone. The video will be permanently removed.</p>
+            <div class="confirm-actions">
+                <button id="cancel-delete" class="btn btn-secondary">Cancel</button>
+                <button id="confirm-delete" class="btn btn-danger">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script>
+        const galleryGrid = document.getElementById('gallery-grid');
+        const loadingState = document.getElementById('loading-state');
+        const emptyState = document.getElementById('empty-state');
+        const errorState = document.getElementById('error-state');
+        const confirmDialog = document.getElementById('confirm-dialog');
+        const cancelDeleteBtn = document.getElementById('cancel-delete');
+        const confirmDeleteBtn = document.getElementById('confirm-delete');
+        const toast = document.getElementById('toast');
+
+        let storyToDelete = null;
+
+        // Show toast message
+        function showToast(message, type = 'success') {
+            toast.textContent = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // Format relative time
+        function formatTimeAgo(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const seconds = Math.floor((now - date) / 1000);
+            
+            const intervals = {
+                year: 31536000,
+                month: 2592000,
+                week: 604800,
+                day: 86400,
+                hour: 3600,
+                minute: 60
+            };
+            
+            for (const [unit, secondsInUnit] of Object.entries(intervals)) {
+                const interval = Math.floor(seconds / secondsInUnit);
+                if (interval >= 1) {
+                    return interval === 1 ? `1 ${unit} ago` : `${interval} ${unit}s ago`;
+                }
+            }
+            
+            return 'Just now';
+        }
+
+        // Create admin video card
+        function createVideoCard(story) {
+            const card = document.createElement('div');
+            card.className = 'video-card admin-card';
+            card.id = `card-${story.id}`;
+            card.innerHTML = `
+                <button class="delete-btn" data-id="${story.id}" title="Delete video">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="3 6 5 6 21 6"/>
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                        <line x1="10" y1="11" x2="10" y2="17"/>
+                        <line x1="14" y1="11" x2="14" y2="17"/>
+                    </svg>
+                </button>
+                <div class="video-thumbnail">
+                    <video src="${story.video_url}" preload="metadata"></video>
+                    <div class="play-overlay">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <polygon points="5 3 19 12 5 21 5 3"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="video-info">
+                    <span class="video-date">${formatTimeAgo(story.created_at)}</span>
+                    <div class="video-id">ID: ${story.id}</div>
+                </div>
+            `;
+            
+            // Delete button handler
+            card.querySelector('.delete-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                storyToDelete = story;
+                confirmDialog.classList.add('active');
+            });
+            
+            // Click to play (opens in new tab for admin)
+            card.querySelector('.video-thumbnail').addEventListener('click', () => {
+                window.open(story.video_url, '_blank');
+            });
+            
+            return card;
+        }
+
+        // Delete story
+        async function deleteStory(story) {
+            try {
+                // Extract filename from URL
+                const filename = `${story.id}.mp4`;
+                
+                // Delete from storage
+                const { error: storageError } = await supabase.storage
+                    .from('videos')
+                    .remove([filename]);
+                
+                if (storageError) {
+                    console.error('Storage delete error:', storageError);
+                    // Continue anyway - file might not exist
+                }
+                
+                // Delete from database
+                const { error: dbError } = await supabase
+                    .from('stories')
+                    .delete()
+                    .eq('id', story.id);
+                
+                if (dbError) {
+                    throw dbError;
+                }
+                
+                // Remove card from DOM
+                const card = document.getElementById(`card-${story.id}`);
+                if (card) {
+                    card.style.transform = 'scale(0.9)';
+                    card.style.opacity = '0';
+                    setTimeout(() => card.remove(), 200);
+                }
+                
+                showToast('Video deleted successfully', 'success');
+                
+                // Check if gallery is empty
+                setTimeout(() => {
+                    if (galleryGrid.children.length === 0) {
+                        emptyState.style.display = 'flex';
+                    }
+                }, 250);
+                
+            } catch (err) {
+                console.error('Delete error:', err);
+                showToast('Failed to delete video', 'error');
+            }
+        }
+
+        // Confirm dialog handlers
+        cancelDeleteBtn.addEventListener('click', () => {
+            confirmDialog.classList.remove('active');
+            storyToDelete = null;
+        });
+
+        confirmDeleteBtn.addEventListener('click', async () => {
+            if (storyToDelete) {
+                confirmDeleteBtn.disabled = true;
+                confirmDeleteBtn.textContent = 'Deleting...';
+                
+                await deleteStory(storyToDelete);
+                
+                confirmDeleteBtn.disabled = false;
+                confirmDeleteBtn.textContent = 'Delete';
+                confirmDialog.classList.remove('active');
+                storyToDelete = null;
+            }
+        });
+
+        // Close dialog on backdrop click
+        confirmDialog.addEventListener('click', (e) => {
+            if (e.target === confirmDialog) {
+                confirmDialog.classList.remove('active');
+                storyToDelete = null;
+            }
+        });
+
+        // Load stories
+        async function loadStories() {
+            loadingState.style.display = 'flex';
+            emptyState.style.display = 'none';
+            errorState.style.display = 'none';
+            galleryGrid.innerHTML = '';
+
+            try {
+                const { data: stories, error } = await supabase
+                    .from('stories')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                loadingState.style.display = 'none';
+
+                if (error) throw error;
+
+                if (!stories || stories.length === 0) {
+                    emptyState.style.display = 'flex';
+                    return;
+                }
+
+                stories.forEach(story => {
+                    galleryGrid.appendChild(createVideoCard(story));
+                });
+
+            } catch (err) {
+                console.error('Error loading stories:', err);
+                loadingState.style.display = 'none';
+                errorState.style.display = 'flex';
+            }
+        }
+
+        // Load on page load
+        loadStories();
+    </script>
+</body>
+</html>
+

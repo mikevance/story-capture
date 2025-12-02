@@ -54,6 +54,10 @@ CREATE POLICY "Allow public viewing" ON stories
 -- Allow anyone to insert
 CREATE POLICY "Allow public insert" ON stories
     FOR INSERT WITH CHECK (true);
+
+-- Allow anyone to delete (for admin)
+CREATE POLICY "Allow public delete" ON stories
+    FOR DELETE USING (true);
 ```
 
 4. Click **Run** (or press Cmd+Enter / Ctrl+Enter)
@@ -98,6 +102,21 @@ CREATE POLICY "Allow public insert" ON stories
 3. Fill in:
    - **Policy name:** `Allow public uploads`
    - **Allowed operation:** Check ✅ **INSERT**
+   - **Target roles:** Leave as default
+   - **Policy definition:** Type exactly:
+     ```
+     bucket_id = 'videos'
+     ```
+4. Click **Review**
+5. Click **Save policy**
+
+### Step 5b: Add Storage Policy for Deleting (Admin)
+
+1. Click **New policy** again
+2. Click **For full customization**
+3. Fill in:
+   - **Policy name:** `Allow public deletes`
+   - **Allowed operation:** Check ✅ **DELETE**
    - **Target roles:** Leave as default
    - **Policy definition:** Type exactly:
      ```
